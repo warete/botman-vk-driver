@@ -19,7 +19,6 @@ class VkDriver extends HttpDriver
     const DRIVER_NAME = 'Vk';
     const API_URL = 'https://api.vk.com/method/';
     const GENERIC_EVENTS = [
-        'confirmation',
         'chat_create',
         'chat_invite_user',
         'chat_invite_user_by_link',
@@ -34,17 +33,24 @@ class VkDriver extends HttpDriver
         'message_edit',
         'message_reply',
     ];
+	const CONFIRMATION_TYPE = 'confirmation';
+	const MESSAGE_NEW_TYPE = 'message_new';
 
     protected $messages = [];
 
+	protected $needOkResponse = true;
+
     public function buildPayload(Request $request)
     {
-        $this->payload = new ParameterBag(json_decode($request->getContent(), true) ?? []);
-        $this->event = Collection::make($this->payload->all());
-        $this->config = Collection::make($this->config->get('vk', []));
-        if (($this->matchesRequest() || $this->hasMatchingEvent()) && $this->event->get('type') != 'confirmation') {
-            $this->respondApiServer();
-        }
+		$this->payload = new ParameterBag(json_decode($request->getContent(), true) ?? []);
+		$this->event = Collection::make($this->payload->all());
+		$this->config = Collection::make($this->config->get('vk', []));
+		if ($this->matchesRequest() || $this->hasMatchingEvent()) {
+			if ($this->event->get('type') == self::CONFIRMATION_TYPE)
+			{
+				$this->needOkResponse = false;
+			}
+		}
     }
 
     public function buildServicePayload($message, $matchingMessage, $additionalParameters = [])
@@ -140,11 +146,10 @@ class VkDriver extends HttpDriver
 
     protected function respondApiServer()
     {
-        static $responseSent = false;
-        if (!$responseSent) {
-            echo 'ok';
-            $responseSent = true;
-        }
+		if ($this->needOkResponse) {
+			echo 'ok';
+			$this->needOkResponse = false;
+		}
     }
 
     public function requestAuthenticated()
