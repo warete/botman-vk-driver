@@ -37,4 +37,13 @@ return [
     |
     */
     'secret_key' => env('VK_SECRET_KEY'),
+	/*
+    |--------------------------------------------------------------------------
+    | Confirmation code
+    |--------------------------------------------------------------------------
+    |
+    | Used to accept testing request from VK.
+    |
+    */
+    'confirmation_code' => env('VK_CONFIRMATION_CODE'),
 ];
