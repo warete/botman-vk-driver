@@ -134,7 +134,7 @@ class VkDriver extends HttpDriver
 
     protected function loadMessages()
     {
-        $message = $this->event->get('object');
+        $message = $this->event->get('object')['message'];
 
         $this->messages = [new IncomingMessage($message['text'], $message['from_id'], $message['peer_id'], $this->event->toArray())];
     }
