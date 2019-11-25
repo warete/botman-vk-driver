@@ -38,7 +38,7 @@ class VkDriver extends HttpDriver
 
     protected $messages = [];
 
-	protected $needOkResponse = true;
+	protected static $needOkResponse = true;
 
     public function buildPayload(Request $request)
     {
@@ -48,8 +48,9 @@ class VkDriver extends HttpDriver
 		if ($this->matchesRequest() || $this->hasMatchingEvent()) {
 			if ($this->event->get('type') == self::CONFIRMATION_TYPE)
 			{
-				$this->needOkResponse = false;
+				static::$needOkResponse = false;
 			}
+			$this->respondApiServer();
 		}
     }
 
@@ -146,9 +147,9 @@ class VkDriver extends HttpDriver
 
     protected function respondApiServer()
     {
-		if ($this->needOkResponse) {
+		if (static::$needOkResponse) {
 			echo 'ok';
-			$this->needOkResponse = false;
+			static::$needOkResponse = false;
 		}
     }
 
