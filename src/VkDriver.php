@@ -56,20 +56,25 @@ class VkDriver extends HttpDriver
 
     public function buildServicePayload($message, $matchingMessage, $additionalParameters = [])
     {
-        //TODO: Implement buttons and attachments features.
-        $payload = [
-            'peer_id' => $matchingMessage->getSender(),
-        ];
+		//TODO: Implement buttons and attachments features.
+		$groupId = $this->event->get('group_id');
+		$payload = [
+			'user_id' => $matchingMessage->getSender(),
+			'peer_id' => '-'.$groupId,
+			'random_id' => date("Ymdhisu")
+		];
 
-        if ($message instanceof Question) {
-            $payload['message'] = $message->getText();
-        } elseif ($message instanceof OutgoingMessage) {
-            $payload['message'] = $message->getText();
-        } else {
-            $payload['message'] = $message;
-        }
+		if ($this->event->get('type') == self::CONFIRMATION_TYPE) {
+			$payload = $this->config->get('confirmation_code');
+		}else if ($message instanceof Question) {
+			$payload['message'] = $message->getText();
+		} elseif ($message instanceof OutgoingMessage) {
+			$payload['message'] = $message->getText();
+		} else {
+			$payload['message'] = $message;
+		}
 
-        return $payload;
+		return $payload;
     }
 
     public function getConversationAnswer(IncomingMessage $message)
@@ -130,7 +135,13 @@ class VkDriver extends HttpDriver
 
     public function isConfigured()
     {
-        return !empty($this->config->get('access_token')) && !empty($this->config->get('api_version'));
+		return (
+			!empty($this->config->get('access_token'))
+			&&
+			!empty($this->config->get('api_version'))
+			&&
+			!empty($this->config->get('confirmation_code'))
+		);
     }
 
     protected function loadMessages()
@@ -142,7 +153,17 @@ class VkDriver extends HttpDriver
 
     public function matchesRequest()
     {
-        return ($this->event->get('type') == 'message_new') && !isset($this->event->toArray()['object']['action']) && $this->requestAuthenticated();
+		return (
+			$this->event->get('type') == self::CONFIRMATION_TYPE
+			||
+			(
+				($this->event->get('type') == self::MESSAGE_NEW_TYPE)
+				&&
+				!isset($this->event->toArray()['object']['action'])
+				&&
+				$this->requestAuthenticated()
+			)
+		);
     }
 
     protected function respondApiServer()
@@ -160,7 +181,14 @@ class VkDriver extends HttpDriver
 
     public function sendPayload($payload)
     {
-        return $this->sendRequest('messages.send', $payload, new IncomingMessage('', '', ''));
+		if ($this->event->get('type') == self::CONFIRMATION_TYPE)
+		{
+			exit($this->config->get('confirmation_code'));
+		}
+		else
+		{
+			return $this->sendRequest('messages.send', $payload, new IncomingMessage('', '', ''));
+		}
     }
 
     public function sendRequest($endpoint, array $parameters, IncomingMessage $matchingMessage)
